@@ -31,6 +31,7 @@ import com.sun.jdi.event.MethodExitEvent;
 import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.event.VMDisconnectEvent;
 import com.sun.jdi.request.BreakpointRequest;
+import com.sun.jdi.request.ClassPrepareRequest;
 import com.sun.jdi.request.EventRequestManager;
 import com.sun.jdi.request.MethodExitRequest;
 
@@ -73,8 +74,6 @@ public abstract class BreakpointDebugger {
 			throw new SavException(ModuleEnum.JVM, "cannot start jvm!");
 		}
 		
-		/*add exception watch*/
-		//addExceptionWatch(vm.eventRequestManager());
 		/* add class watch */
 		addClassWatch(vm.eventRequestManager());
 
@@ -97,7 +96,6 @@ public abstract class BreakpointDebugger {
 				break;
 			}
 			for (Event event : eventSet) {
-				//System.out.println(event.getClass());
 				if (event instanceof VMDeathEvent
 						|| event instanceof VMDisconnectEvent) {
 					stop = true;
@@ -144,15 +142,6 @@ public abstract class BreakpointDebugger {
 	protected abstract void handleClassPrepareEvent(VirtualMachine vm, ClassPrepareEvent event);
 	protected abstract void handleBreakpointEvent(BreakPoint bkp, VirtualMachine vm, BreakpointEvent bkpEvent) throws SavException;
 	protected abstract void afterDebugging() throws SavException ;
-	
-	/** add exception watch request **/
-	/*protected void addExceptionWatch(EventRequestManager erm) {
-		ExceptionRequest exceptionRequest = erm.createExceptionRequest(null, true, true);
-		exceptionRequest.enable();
-		MethodExitRequest methodExitRequest = erm.createMethodExitRequest();
-		methodExitRequest.enable();
-	}*/
-
 
 	/** add watch requests **/
 	protected void addClassWatch(EventRequestManager erm) {
@@ -163,12 +152,9 @@ public abstract class BreakpointDebugger {
 	}
 
 	protected final void addClassWatch(EventRequestManager erm, String className) {
-		/*ExceptionRequest exceptionRequest = erm.createExceptionRequest(null, true, true);
-		exceptionRequest.addClassFilter(className);
-		exceptionRequest.enable();*/
-		/*ClassPrepareRequest classPrepareRequest = erm.createClassPrepareRequest();
+		ClassPrepareRequest classPrepareRequest = erm.createClassPrepareRequest();
 		classPrepareRequest.addClassFilter(className);
-		classPrepareRequest.setEnabled(true);*/
+		classPrepareRequest.setEnabled(true);
 		MethodExitRequest methodExitRequest = erm.createMethodExitRequest();
 		methodExitRequest.addClassFilter(className);
 		methodExitRequest.enable();
@@ -212,4 +198,9 @@ public abstract class BreakpointDebugger {
 	protected VMConfiguration getVmConfig() {
 		return config;
 	}
+
+	public boolean isBuggy() {
+		return buggy;
+	}
+	
 }

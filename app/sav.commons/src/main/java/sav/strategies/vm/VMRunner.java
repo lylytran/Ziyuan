@@ -86,7 +86,7 @@ public class VMRunner {
 	}
 	
 	public String getProccessError() throws SavRtException {
-		if (processError == null || processError.equals(StringUtils.EMPTY)) {
+		if (processError == null) {
 			if (process != null) {
 				try {
 					processError = getText(process.getErrorStream());
