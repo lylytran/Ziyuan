@@ -15,6 +15,25 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.sun.jdi.AbsentInformationException;
+import com.sun.jdi.IntegerValue;
+import com.sun.jdi.Location;
+import com.sun.jdi.ObjectReference;
+import com.sun.jdi.ReferenceType;
+import com.sun.jdi.Value;
+import com.sun.jdi.VirtualMachine;
+import com.sun.jdi.event.BreakpointEvent;
+import com.sun.jdi.event.ClassPrepareEvent;
+import com.sun.jdi.event.Event;
+import com.sun.jdi.event.EventQueue;
+import com.sun.jdi.event.EventSet;
+import com.sun.jdi.event.MethodExitEvent;
+import com.sun.jdi.event.VMDeathEvent;
+import com.sun.jdi.event.VMDisconnectEvent;
+import com.sun.jdi.request.BreakpointRequest;
+import com.sun.jdi.request.EventRequestManager;
+import com.sun.jdi.request.MethodExitRequest;
+
 import sav.common.core.ModuleEnum;
 import sav.common.core.SavException;
 import sav.common.core.utils.BreakpointUtils;
@@ -22,21 +41,6 @@ import sav.common.core.utils.CollectionUtils;
 import sav.strategies.dto.BreakPoint;
 import sav.strategies.vm.SimpleDebugger;
 import sav.strategies.vm.VMConfiguration;
-
-import com.sun.jdi.AbsentInformationException;
-import com.sun.jdi.Location;
-import com.sun.jdi.ReferenceType;
-import com.sun.jdi.VirtualMachine;
-import com.sun.jdi.event.BreakpointEvent;
-import com.sun.jdi.event.ClassPrepareEvent;
-import com.sun.jdi.event.Event;
-import com.sun.jdi.event.EventQueue;
-import com.sun.jdi.event.EventSet;
-import com.sun.jdi.event.VMDeathEvent;
-import com.sun.jdi.event.VMDisconnectEvent;
-import com.sun.jdi.request.BreakpointRequest;
-import com.sun.jdi.request.ClassPrepareRequest;
-import com.sun.jdi.request.EventRequestManager;
 
 /**
  * @author LLT
@@ -50,6 +54,7 @@ public abstract class BreakpointDebugger {
 	// map of classes and their breakpoints
 	private Map<String, List<BreakPoint>> brkpsMap;
 	protected List<BreakPoint> bkps;
+	protected boolean buggy;
 
 	public void setup(VMConfiguration config) {
 		this.config = config;
@@ -67,6 +72,9 @@ public abstract class BreakpointDebugger {
 		if (vm == null) {
 			throw new SavException(ModuleEnum.JVM, "cannot start jvm!");
 		}
+		
+		/*add exception watch*/
+		//addExceptionWatch(vm.eventRequestManager());
 		/* add class watch */
 		addClassWatch(vm.eventRequestManager());
 
@@ -89,10 +97,21 @@ public abstract class BreakpointDebugger {
 				break;
 			}
 			for (Event event : eventSet) {
+				//System.out.println(event.getClass());
 				if (event instanceof VMDeathEvent
 						|| event instanceof VMDisconnectEvent) {
 					stop = true;
 					break;
+				} else if (event instanceof MethodExitEvent && !buggy) {
+					Value returnValue = ((MethodExitEvent) event).returnValue();					
+					if (returnValue.type().name().equals("org.junit.runner.Result")) {
+						ObjectReference result = (ObjectReference) returnValue;
+						ObjectReference failList = (ObjectReference) result.getValue(result.referenceType().fieldByName("fFailures"));
+						ObjectReference innerList = (ObjectReference) failList.getValue(failList.referenceType().fieldByName("list"));
+						if (((IntegerValue)innerList.getValue(innerList.referenceType().fieldByName("size"))).value() != 0) {
+							buggy = true;
+						}
+					}
 				} else if (event instanceof ClassPrepareEvent) {
 					// add breakpoint watch on loaded class
 					ClassPrepareEvent classPrepEvent = (ClassPrepareEvent) event;
@@ -125,6 +144,14 @@ public abstract class BreakpointDebugger {
 	protected abstract void handleClassPrepareEvent(VirtualMachine vm, ClassPrepareEvent event);
 	protected abstract void handleBreakpointEvent(BreakPoint bkp, VirtualMachine vm, BreakpointEvent bkpEvent) throws SavException;
 	protected abstract void afterDebugging() throws SavException ;
+	
+	/** add exception watch request **/
+	/*protected void addExceptionWatch(EventRequestManager erm) {
+		ExceptionRequest exceptionRequest = erm.createExceptionRequest(null, true, true);
+		exceptionRequest.enable();
+		MethodExitRequest methodExitRequest = erm.createMethodExitRequest();
+		methodExitRequest.enable();
+	}*/
 
 
 	/** add watch requests **/
@@ -136,10 +163,15 @@ public abstract class BreakpointDebugger {
 	}
 
 	protected final void addClassWatch(EventRequestManager erm, String className) {
-		ClassPrepareRequest classPrepareRequest = erm
-				.createClassPrepareRequest();
+		/*ExceptionRequest exceptionRequest = erm.createExceptionRequest(null, true, true);
+		exceptionRequest.addClassFilter(className);
+		exceptionRequest.enable();*/
+		/*ClassPrepareRequest classPrepareRequest = erm.createClassPrepareRequest();
 		classPrepareRequest.addClassFilter(className);
-		classPrepareRequest.setEnabled(true);
+		classPrepareRequest.setEnabled(true);*/
+		MethodExitRequest methodExitRequest = erm.createMethodExitRequest();
+		methodExitRequest.addClassFilter(className);
+		methodExitRequest.enable();
 	}
 	
 	private void addBreakpointWatch(VirtualMachine vm, ReferenceType refType,

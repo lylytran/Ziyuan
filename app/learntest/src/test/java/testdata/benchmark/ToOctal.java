@@ -8,9 +8,9 @@ public class ToOctal {
 		}
 		
 		//to achieve 100% coverage
-		if (value == 0) {
+		/*if (value == 0) {
 			return 0;
-		}
+		}*/
 
 		StringBuilder sb = new StringBuilder();
 		while (value > 0) {
@@ -23,6 +23,6 @@ public class ToOctal {
 	}
 	
 	public static void main(String[] args) {
-		new ToOctal().toOctalTest(134);
+		new ToOctal().toOctalTest(0);
 	}
 }
