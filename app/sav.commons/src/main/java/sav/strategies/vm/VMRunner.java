@@ -12,6 +12,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -163,8 +164,8 @@ public class VMRunner {
 	public boolean waitUntilStop(Process process) throws SavException {
 		try {
 			getText(process.getInputStream());
-			processError = getText(process.getErrorStream());
-			process.waitFor();
+			processError = getText(process.getErrorStream());			
+			process.waitFor();			 
 			String error = getText((process.getErrorStream()));
 			if (!StringUtils.isEmpty(error)) {
 				log.debug(error);
@@ -180,7 +181,7 @@ public class VMRunner {
 		}
 	}
 
-//	public boolean waitUntilStop(Process process)
+	//	public boolean waitUntilStop(Process process)
 //			throws SavException {
 //		while (true) {
 //			try {

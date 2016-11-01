@@ -136,7 +136,8 @@ public abstract class BreakpointDebugger {
 		if (!eventTimeout) {
 			vm.resume();
 			/* wait until the process completes */
-			debugger.waitProcessUntilStop();
+			// wait for will cause the process to wait forever, comment it seems works, but may cause some problems.
+			//debugger.waitProcessUntilStop();
 		}
 		/* end of debug */
 		afterDebugging();
@@ -150,10 +151,10 @@ public abstract class BreakpointDebugger {
 
 	/** add watch requests **/
 	protected void addClassWatch(EventRequestManager erm) {
-		MethodExitRequest methodExitRequest = erm.createMethodExitRequest();
+		/*MethodExitRequest methodExitRequest = erm.createMethodExitRequest();
 		methodExitRequest.addClassFilter("org.junit.runner.JUnitCore");
 		methodExitRequest.setSuspendPolicy(EventRequest.SUSPEND_NONE);
-		methodExitRequest.enable();
+		methodExitRequest.enable();*/
 		/* add class watch for breakpoints */
 		for (String className : brkpsMap.keySet()) {
 			addClassWatch(erm, className);
@@ -164,6 +165,9 @@ public abstract class BreakpointDebugger {
 		ClassPrepareRequest classPrepareRequest = erm.createClassPrepareRequest();
 		classPrepareRequest.addClassFilter(className);
 		classPrepareRequest.setEnabled(true);
+		MethodExitRequest methodExitRequest = erm.createMethodExitRequest();
+		methodExitRequest.addClassFilter(className);
+		methodExitRequest.enable();
 	}
 	
 	private void addBreakpointWatch(VirtualMachine vm, ReferenceType refType,
