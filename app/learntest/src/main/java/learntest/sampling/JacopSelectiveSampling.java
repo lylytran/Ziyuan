@@ -47,6 +47,10 @@ public class JacopSelectiveSampling {
 		prevDatas = new ArrayList<Domain[]>();
 	}
 	
+	public void addPrevData(List<Domain[]> data) {
+		prevDatas.addAll(data);
+	}
+	
 	public Map<DecisionLocation, BreakpointData> selectDataForModel(DecisionLocation target, 
 			List<ExecVar> originVars, List<DataPoint> datapoints,
 			OrCategoryCalculator precondition, List<Divider> dividers) throws SavException {
@@ -362,6 +366,9 @@ public class JacopSelectiveSampling {
 			}
 			//cnt ++;
 			selectData(assignments);
+			if (isBuggy()) {
+				return selectResult;
+			}
 			if (selectResult == null) {
 				continue;
 			}
@@ -542,5 +549,9 @@ public class JacopSelectiveSampling {
 	
 	public int getTotalNum() {
 		return prevDatas.size() + 1;
+	}
+	
+	public boolean isBuggy() {
+		return tcExecutor.isBuggy();
 	}
 }

@@ -88,9 +88,9 @@ public class Engine {
 		Map<DecisionLocation, BreakpointData> result = tcExecutor.getResult();
 		tcExecutor.setjResultFileDeleteOnExit(true);
 		//tcExecutor.setSingleMode();
-		tcExecutor.setInstrMode(true);
+		tcExecutor.setInstrMode(true);		
 		JacopSelectiveSampling selectiveSampling = new JacopSelectiveSampling(tcExecutor);
-		DecisionLearner learner = new DecisionLearner(selectiveSampling, manager, random);
+		DecisionLearner learner = new DecisionLearner(selectiveSampling, manager, random);		
 		learner.learn(result);
 		//List<BreakpointValue> records = learner.getRecords();
 		/*System.out.println("==============================================");
@@ -104,7 +104,11 @@ public class Engine {
 		//new TestGenerator().genTestAccordingToSolutions(solutions, learner.getOriginVars());
 		new TestGenerator().genTestAccordingToSolutions(getSolutions(learner.getRecords(), learner.getOriginVars()), 
 				learner.getOriginVars());
-		System.out.println("Total test cases number: " + selectiveSampling.getTotalNum());
+		if (learner.isBuggy()) {
+			System.out.println("Find First Bug After: " + selectiveSampling.getTotalNum() + " Test cases");			
+		} else {
+			System.out.println("Total test cases number: " + selectiveSampling.getTotalNum());
+		}
 		//PathSolver pathSolver = new PathSolver();
 		//List<Result> results = pathSolver.solve(paths);
 		//System.out.println(results);
@@ -113,7 +117,7 @@ public class Engine {
 		//new TestGenerator().genTestAccordingToInput(results, learner.getLabels());
 	}
 		
-	private List<Domain[]> getSolutions(List<BreakpointValue> records, List<ExecVar> originVars) {
+	public static List<Domain[]> getSolutions(List<BreakpointValue> records, List<ExecVar> originVars) {
 		List<Domain[]> res = new ArrayList<Domain[]>();
 		int size = originVars.size();
 		for (BreakpointValue record : records) {

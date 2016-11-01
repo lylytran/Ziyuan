@@ -79,9 +79,24 @@ public class DecisionLearner implements CategoryCalculator {
 		records = new ArrayList<BreakpointValue>();
 		this.bkpDataMap = bkpDataMap;
 		List<BreakpointData> bkpDatas = new ArrayList<BreakpointData>(bkpDataMap.values());
+
+		collectAllVars(bkpDatas.get(0));
+		
+		if (isBuggy()) {
+			records.addAll(bkpDatas.get(0).getFalseValues());
+			records.addAll(bkpDatas.get(0).getTrueValues());			
+			return;
+		}
+		
+		// add the initial test case into selective sampling
+		setUpSelectiveSampling(bkpDatas.get(0));
+		
 		Collections.sort(bkpDatas);
 		Map<DecisionLocation, Pair<Formula, Formula>> decisions = new HashMap<DecisionLocation, Pair<Formula, Formula>>();
 		for (BreakpointData bkpData : bkpDatas) {
+			if (isBuggy()) {
+				return;
+			}
 			log.info("Start to learn at " + bkpData.getLocation());
 			if (bkpData.getFalseValues().isEmpty() && bkpData.getTrueValues().isEmpty()) {
 				log.info("Missing data");
@@ -106,6 +121,10 @@ public class DecisionLearner implements CategoryCalculator {
 		}
 	}
 	
+	private void setUpSelectiveSampling(BreakpointData data) {
+		selectiveSampling.addPrevData(Engine.getSolutions(data.getFalseValues(), originVars));
+		selectiveSampling.addPrevData(Engine.getSolutions(data.getTrueValues(), originVars));
+	}
 	/*private void clear(BreakpointData breakpointData) {
 		Iterator<BreakpointValue> falseValues = breakpointData.getFalseValues().iterator();
 		while (falseValues.hasNext()) {
@@ -146,10 +165,19 @@ public class DecisionLearner implements CategoryCalculator {
 					preconditions, null, bkpData.getTrueValues().isEmpty(), false);
 			//System.out.println("learn select data for empty time: " + (System.currentTimeMillis() - startTime) + "ms");
 			if (selectMap != null) {
+				// stop once find bugs
+				if (isBuggy()) {
+					handleBuggyMap(selectMap);
+					return new Pair<Formula, Formula>(null, null);
+				}
 				mergeMap(selectMap);
 				if (bkpData.getTrueValues().isEmpty() || bkpData.getFalseValues().isEmpty()) {
 					selectMap = selectiveSampling.selectDataForEmpty(bkpData.getLocation(), originVars, 
 							preconditions, null, bkpData.getTrueValues().isEmpty(), false);	
+					if (isBuggy()) {
+						handleBuggyMap(selectMap);
+						return new Pair<Formula, Formula>(null, null);
+					}
 					mergeMap(selectMap);
 				}
 				bkpData = bkpDataMap.get(bkpData.getLocation());
@@ -247,6 +275,10 @@ public class DecisionLearner implements CategoryCalculator {
 				if (newMap == null) {
 					break;
 				}
+				if (isBuggy()) {
+					handleBuggyMap(newMap);
+					return new Pair<Formula, Formula>(null, null);
+				}
 				mergeMap(newMap);
 				
 				//preconditions.clear(newData);
@@ -331,6 +363,10 @@ public class DecisionLearner implements CategoryCalculator {
 			Map<DecisionLocation, BreakpointData> selectMap = selectiveSampling.selectDataForEmpty(loopData.getLocation(), originVars,
 					preConditions, curDividers, loopData.getMoreTimesValues().isEmpty(), true);
 			//System.out.println("learn select data for empty time: " + (System.currentTimeMillis() - startTime) + "ms");
+			if (isBuggy()) {
+				handleBuggyMap(selectMap);
+				return null;
+			}
 			mergeMap(selectMap);
 			loopData = (LoopTimesData) bkpDataMap.get(loopData.getLocation());
 		}
@@ -410,6 +446,10 @@ public class DecisionLearner implements CategoryCalculator {
 				if (newMap == null) {
 					break;
 				}
+				if (isBuggy()) {
+					handleBuggyMap(newMap);
+					return null;
+				}
 				mergeMap(newMap);
 				LoopTimesData newData = (LoopTimesData) newMap.get(loopData.getLocation());
 				if (newData == null) {
@@ -471,6 +511,17 @@ public class DecisionLearner implements CategoryCalculator {
 		}*/
 		
 		return formula;
+	}
+	
+	private void handleBuggyMap(Map<DecisionLocation, BreakpointData> buggyMap) {
+		records.clear();
+		Set<DecisionLocation> keySet = buggyMap.keySet();
+		for (DecisionLocation decisionLocation : keySet) {
+			BreakpointData data = buggyMap.get(decisionLocation);
+			records.addAll(data.getFalseValues());
+			records.addAll(data.getFalseValues());
+			return;
+		}
 	}
 	
 	private boolean collectAllVars(BreakpointData bkpData) {
@@ -613,4 +664,7 @@ public class DecisionLearner implements CategoryCalculator {
 		return records;
 	}
 
+	public boolean isBuggy() {
+		return selectiveSampling.isBuggy();
+	}
 }
