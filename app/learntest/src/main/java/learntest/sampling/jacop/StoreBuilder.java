@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.jacop.constraints.LinearInt;
 import org.jacop.constraints.XeqC;
-import org.jacop.constraints.XgteqY;
 import org.jacop.constraints.XmulYeqZ;
 import org.jacop.core.IntVar;
 import org.jacop.core.Store;
@@ -194,7 +193,7 @@ public class StoreBuilder {
 			String label = vars.get(i).getLabel();
 			for (int j = i; j < size; j++) {
 				int max = intVars[i].dom().max() * intVars[j].dom().max();
-				intVars[idx] = new IntVar(store, label + " * " + vars.get(j).getLabel(), 
+				intVars[idx] = new IntVar(store, label + "*" + vars.get(j).getLabel(), 
 						-max, max);
 				store.impose(new XmulYeqZ(intVars[i], intVars[j], intVars[idx ++]));
 			}
