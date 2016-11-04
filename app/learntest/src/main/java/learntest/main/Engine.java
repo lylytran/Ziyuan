@@ -74,7 +74,7 @@ public class Engine {
 	}
 	
 	public RunTimeInfo run(boolean random) throws ParseException, IOException, SavException, ClassNotFoundException {
-		//TODO: change logic to stop when first bug found
+		//TODO: add logic to use spf when necessary
 		
 		SAVTimer.startCount();
 		
