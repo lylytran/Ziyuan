@@ -75,6 +75,7 @@ public class Engine {
 	
 	public RunTimeInfo run(boolean random) throws ParseException, IOException, SavException, ClassNotFoundException {
 		//TODO: add logic to use spf when necessary
+		//Hard to use spf within plug-in and give up
 		
 		SAVTimer.startCount();
 		
